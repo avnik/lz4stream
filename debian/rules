@@ -1,0 +1,14 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@ --with=autoreconf,autotools-dev
+
+%:
+	dh $@ --with=autoreconf,autotools-dev
+
+override_dh_autoreconf:
+	mkdir -p config
+	dh_autoreconf
+
+override_dh_strip:
+	dh_strip --dbg-package=liblz4stream-dbg

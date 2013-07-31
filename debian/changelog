@@ -1,0 +1,5 @@
+lz4stream (0.1-1) unstable; urgency=low
+
+  * Initial package (closes: #566125)
+
+ -- Alexander V. Nikolaev <avn@daemon.hole.ru>  Tue, 31 Jul 2013 19:03:39 +0200
