@@ -1,0 +1,3 @@
+usr/include/*
+usr/lib/*/liblz4stream.a
+usr/lib/*/liblz4stream.so

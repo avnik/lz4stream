@@ -1,0 +1,28 @@
+Source: lz4stream
+Section: libs
+Priority: optional
+Maintainer: Alexander V. Nikolaev <avn@daemon.hole.ru>
+Build-Depends: debhelper (>= 8),
+ autotools-dev
+Standards-Version: 3.9.4
+
+Package: liblz4stream0
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Multi-Arch: same
+Description: library to deal with lz4 files
+
+Package: liblz4stream-dev
+Architecture: any
+Section: libdevel
+Depends: liblz4stream0 (= ${binary:Version}), ${misc:Depends}
+Multi-Arch: same
+Description: library to deal with lz4 files (development files)
+
+Package: liblz4stream-dbg
+Architecture: any
+Priority: extra
+Section: debug
+Depends: liblz4stream0 (= ${binary:Version}), ${misc:Depends}
+Multi-Arch: same
+Description: library to deal with lz4 files (debugging symbols)
