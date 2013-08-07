@@ -124,6 +124,13 @@ int lz4stream_read_block(lz4stream *lz, void *tail)
     return 0;
   }
 
+  if(!len)
+  {
+    lz->eof = true;
+    lz->error = "EOF";
+    return 0;
+  }
+
   if(tail)
   {
     tail_len = lz->decoded_bytes - (tail - lz->uncompressed_buffer);
