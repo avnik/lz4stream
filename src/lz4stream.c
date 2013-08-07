@@ -27,7 +27,7 @@ static int read_stream_headers(lz4stream *lz)
     lz->error = "Error reading signature";
     return 0;
   };
-  if(signature != LZ4STREAM_SIGNATURE)
+  if(le32toh(signature) != LZ4STREAM_SIGNATURE)
   {
     lz->error = "Bad magic number";
     return 0;
@@ -139,6 +139,7 @@ int lz4stream_read_block(lz4stream *lz, void *tail)
   }
 
   /* in case if "uncompressed data" flag, write directly in output buffer */
+  len = le32toh(len);
   not_compressed = len & 0x70000000;
   len &= 0x7FFFFFFF;
 
