@@ -15,6 +15,7 @@ typedef struct lz4stream_t
   bool  stream_checksum_flag;
   int   block_size;
   int   eof;
+  void *offset;
 } lz4stream;
 
 lz4stream * lz4stream_open_read(const char *filename);
@@ -25,6 +26,17 @@ char *lz4stream_strerror(lz4stream *lz);
 /* access decoded data */
 void *lz4stream_get_buffer(lz4stream *lz);
 int lz4stream_get_decoded_bytes(lz4stream *lz);
-int *lz4stream_eof(lz4stream *lz);
+int lz4stream_eof(lz4stream *lz);
+
+lz4stream *lz4stream_open_write(
+    const char *filename,
+    int block_size,
+    bool block_checksum,
+    bool stream_checksum
+  );
+
+int lz4stream_write_block(lz4stream *lz, void *block, int size);
+int lz4stream_flush(lz4stream *lz);
+int lz4stream_write(lz4stream *lz, void *data, int size);
 
 #endif
