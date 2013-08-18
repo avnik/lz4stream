@@ -8,6 +8,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <lz4.h>
+#include <stdio.h>
 #include "lz4stream.h"
 #include "xxhash.h"
 
@@ -89,15 +90,29 @@ lz4stream * lz4stream_open_read(const char *filename)
 
 int lz4stream_close(lz4stream *lz)
 {
+  uint32_t zero = 0;
+
+  fprintf(stderr, "close 1\n");
   if(lz->mode == O_WRONLY && !lz->error)
   {
+    fprintf(stderr, "close 2\n");
     lz4stream_flush(lz);
+
+    fprintf(stderr, "close 3\n");
+    // write end-of-stream marker
+    write(lz->fd, &zero, sizeof(zero));
   }
 
+  fprintf(stderr, "close 4\n");
   if(lz->fd)
     close(lz->fd);
+  fprintf(stderr, "close 5\n");
   free(lz->compressed_buffer);
+  fprintf(stderr, "close 6\n");
   free(lz->uncompressed_buffer);
+  fprintf(stderr, "close 7\n");
+  free(lz);
+  fprintf(stderr, "close 8\n");
 }
 
 int lz4stream_read_block(lz4stream *lz, void *tail)
@@ -256,7 +271,7 @@ lz4stream *lz4stream_open_write(
   lz->compressed_buffer = malloc(lz->block_size);
   lz->offset = lz->compressed_buffer;
 
-  header[0] = 0x20; // block independent
+  header[0] = 0x60; // block independent
   if(lz->block_checksum_flag)
   {
     header[0] |= 0x10;
@@ -354,7 +369,7 @@ int lz4stream_write(lz4stream *lz, void *data, int size)
     return 0;
   }
 
-  if((lz->offset - lz->uncompressed_buffer) > size)
+  if((lz->offset - lz->uncompressed_buffer + size) > lz->block_size)
   {
     lz4stream_flush(lz);
   }
