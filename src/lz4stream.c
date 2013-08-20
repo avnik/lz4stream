@@ -66,25 +66,32 @@ static int read_stream_headers(lz4stream *lz)
 
 }
 
-lz4stream * lz4stream_open_read(const char *filename)
+lz4stream * lz4stream_fdopen_read(int fd)
 {
   lz4stream *lz = calloc(1, sizeof(lz4stream));
   if(!lz)
-    return NULL;
-
-  lz->fd = open(filename, O_RDONLY);
-  if(!lz->fd)
   {
-    free(lz);
+    close(fd);
     return NULL;
   }
 
+  lz->fd = fd;
   lz->mode = O_RDONLY;
   read_stream_headers(lz);
 
   lz->compressed_buffer = malloc(lz->block_size);
   lz->uncompressed_buffer = malloc(2 * lz->block_size);
   return lz;
+}
+
+lz4stream * lz4stream_open_read(const char *filename)
+{
+  int fd = open(filename, O_RDONLY);
+  if(fd < 0)
+  {
+    return NULL;
+  }
+  return lz4stream_fdopen_read(fd);
 }
 
 int lz4stream_close(lz4stream *lz)
@@ -227,8 +234,8 @@ int lz4stream_eof(lz4stream *lz)
   return lz->eof;
 }
 
-lz4stream *lz4stream_open_write(
-    const char *filename,
+lz4stream *lz4stream_fdopen_write(
+    int fd,
     int block_size_id,
     bool block_checksum,
     bool stream_checksum
@@ -239,19 +246,18 @@ lz4stream *lz4stream_open_write(
 
   if(block_size_id < 4 || block_size_id > 7)
   {
+    close(fd);
     return NULL;
   }
 
   lz4stream *lz = calloc(1, sizeof(lz4stream));
   if(!lz)
-    return NULL;
-
-  lz->fd = open(filename, O_WRONLY | O_CREAT, 0644);
-  if(!lz->fd)
   {
-    free(lz);
+    close(fd);
     return NULL;
   }
+
+  lz->fd = fd;
 
   lz->mode = O_WRONLY;
   lz->block_checksum_flag = block_checksum;
@@ -288,6 +294,34 @@ lz4stream *lz4stream_open_write(
   }
 
   return lz;
+}
+
+lz4stream *lz4stream_open_write(
+    const char *filename,
+    int block_size_id,
+    bool block_checksum,
+    bool stream_checksum
+  )
+{
+  /* this check same as in lz4stream_fdopen_write(), but we should check
+     block_size_id before open/create file */
+  if(block_size_id < 4 || block_size_id > 7)
+  {
+    return NULL;
+  }
+
+  int fd = open(filename, O_WRONLY | O_CREAT, 0644);
+  if(fd < 0)
+  {
+    return NULL;
+  };
+
+  return lz4stream_fdopen_write(
+      fd,
+      block_size_id,
+      block_checksum,
+      stream_checksum
+    );
 }
 
 int lz4stream_write_block(lz4stream *lz, void *block, int size)
