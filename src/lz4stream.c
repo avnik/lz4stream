@@ -362,10 +362,18 @@ int lz4stream_write(lz4stream *lz, void *data, int size)
 
   if((lz->offset - lz->uncompressed_buffer + size) > lz->block_size)
   {
-    lz4stream_flush(lz);
+    int size1 = lz->block_size - (lz->offset - lz->uncompressed_buffer);
+    memcpy(lz->offset, data, size1);
+    lz->offset += size1;
+    int ret = lz4stream_flush(lz);
+    /* TODO error handling */
+    memcpy(lz->offset, data + size1, size - size1);
+    lz->offset += size - size1;
   }
-
-  memcpy(lz->offset, data, size);
-  lz->offset += size;
+  else
+  {
+    memcpy(lz->offset, data, size);
+    lz->offset += size;
+  }
   return size;
 }
