@@ -202,6 +202,7 @@ int lz4stream_read_block(lz4stream *lz, void *tail)
       );
     if(lz->decoded_bytes < 0)
     {
+      lz->eof = true;
       lz->error = "malformed block or lz4 decoder internal error";
       return 0;
     }
