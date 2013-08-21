@@ -1,3 +1,9 @@
+lz4stream (0.2) unstable; urgency=low
+
+  * Support for writing lz4 compressed files
+
+ -- Alexander V. Nikolaev <avn@daemon.hole.ru>  Wed, 21 Aug 2013 00:33:08 +0000
+
 lz4stream (0.1.1-1) unstable; urgency=low
 
   * Hotfix release:
