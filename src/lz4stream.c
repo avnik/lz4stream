@@ -14,6 +14,14 @@
 #define LZ4STREAM_SIGNATURE 0x184D2204
 #define LZ4STREAM_XXHASH_SEED 0
 
+#define LZ4S_B0_VERSION 0x40
+#define LZ4S_B0_BLOCK_INDEP 0x20
+#define LZ4S_B0_BLOCK_CHECKSUM 0x10
+#define LZ4S_B0_STREAM_CHECKSUM 0x04
+
+#define LZ4S_B0_VERSION_MASK 0xC0
+#define LZ4S_B1_RESERVED_MASK 0x8f
+
 static int read_stream_headers(lz4stream *lz)
 {
   uint32_t signature;
@@ -47,15 +55,16 @@ static int read_stream_headers(lz4stream *lz)
 
   block_size_id = (header[1] >> 4) & 0x07;
   lz->block_size = 1 << (8 + (2 * block_size_id));
-  lz->block_checksum_flag = header[0] & 0x10;
-  lz->stream_checksum_flag = header[0] & 0x04;
+  lz->block_checksum_flag = header[0] & LZ4S_B0_BLOCK_CHECKSUM;
+  lz->stream_checksum_flag = header[0] & LZ4S_B0_STREAM_CHECKSUM;
 
-  CHECK((header[0] & 0xC0) == 0, "bad version")
-  CHECK((header[0] & 0x20) != 0x20, "does not block independent");
+  CHECK((header[0] & LZ4S_B0_VERSION) != LZ4S_B0_VERSION, "bad version")
+  CHECK((header[0] & LZ4S_B0_BLOCK_INDEP) != LZ4S_B0_BLOCK_INDEP,
+    "does not block independent");
   CHECK((header[0] & 0x80) != 0, "bad stream size");
   CHECK((header[0] & 0x02) != 0, "bad reserved bits");
   CHECK((header[0] & 0x01) != 0, "dictionaries not supported");
-  CHECK((header[1] & 0x8f) != 0, "bad reserved bits");
+  CHECK((header[1] & LZ4S_B1_RESERVED_MASK) != 0, "bad reserved bits");
   CHECK(block_size_id < 4 || block_size_id > 7, "bad block size id");
 
   check_bits = header[2];
@@ -269,14 +278,14 @@ lz4stream *lz4stream_fdopen_write(
   lz->compressed_buffer = malloc(lz->block_size);
   lz->offset = lz->uncompressed_buffer;
 
-  header[0] = 0x60; // block independent
+  header[0] = LZ4S_B0_VERSION | LZ4S_B0_BLOCK_INDEP; // block independent
   if(lz->block_checksum_flag)
   {
-    header[0] |= 0x10;
+    header[0] |= LZ4S_B0_BLOCK_CHECKSUM;
   }
   if(lz->stream_checksum_flag)
   {
-    header[0] |= 0x04;
+    header[0] |= LZ4S_B0_STREAM_CHECKSUM;
   }
 
   header[1] = (block_size_id | 0x07) << 4;
