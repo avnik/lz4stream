@@ -30,24 +30,24 @@ static int read_stream_headers(lz4stream *lz)
   uint8_t check_bits_xxh32;
   int block_size_id;
 
-  if(read(lz->fd, &signature, sizeof(signature)) != sizeof(signature))
+  if (read(lz->fd, &signature, sizeof(signature)) != sizeof(signature))
   {
     lz->error = "Error reading signature";
     return 0;
   };
-  if(le32toh(signature) != LZ4STREAM_SIGNATURE)
+  if (le32toh(signature) != LZ4STREAM_SIGNATURE)
   {
     lz->error = "Bad magic number";
     return 0;
   };
-  if(read(lz->fd, header, 3) != 3)
+  if (read(lz->fd, header, 3) != 3)
   {
     lz->error = "Error reading header";
     return 0;
   };
 
 #define CHECK(condition, err) \
-  if((condition))             \
+  if ((condition))             \
   {                           \
     lz->error = err;          \
     return 0;                 \
@@ -78,7 +78,7 @@ static int read_stream_headers(lz4stream *lz)
 lz4stream * lz4stream_fdopen_read(int fd)
 {
   lz4stream *lz = calloc(1, sizeof(lz4stream));
-  if(!lz)
+  if (!lz)
   {
     close(fd);
     return NULL;
@@ -96,7 +96,7 @@ lz4stream * lz4stream_fdopen_read(int fd)
 lz4stream * lz4stream_open_read(const char *filename)
 {
   int fd = open(filename, O_RDONLY);
-  if(fd < 0)
+  if (fd < 0)
   {
     return NULL;
   }
@@ -107,7 +107,7 @@ int lz4stream_close(lz4stream *lz)
 {
   uint32_t zero = 0;
 
-  if(lz->mode == O_WRONLY && !lz->error)
+  if (lz->mode == O_WRONLY && !lz->error)
   {
     lz4stream_flush(lz);
 
@@ -115,7 +115,7 @@ int lz4stream_close(lz4stream *lz)
     write(lz->fd, &zero, sizeof(zero));
   }
 
-  if(lz->fd)
+  if (lz->fd)
     close(lz->fd);
   free(lz->compressed_buffer);
   free(lz->uncompressed_buffer);
@@ -133,32 +133,32 @@ int lz4stream_read_block(lz4stream *lz, void *tail)
   void *compressed_data = lz->compressed_buffer;
   void *start = lz->uncompressed_buffer;
 
-  if(lz->error) /* Do nothing in error state */
+  if (lz->error) /* Do nothing in error state */
   {
     return 0;
   }
 
-  if(lz->mode != O_RDONLY)
+  if (lz->mode != O_RDONLY)
   {
     lz->error = "O_WRONLY stream";
     return 0;
   }
 
-  if(read(lz->fd, &len, sizeof(len)) != sizeof(len))
+  if (read(lz->fd, &len, sizeof(len)) != sizeof(len))
   {
     lz->eof = true;
     lz->error = "Error reading length";
     return 0;
   }
 
-  if(!len)
+  if (!len)
   {
     lz->eof = true;
     lz->error = "EOF";
     return 0;
   }
 
-  if(tail)
+  if (tail)
   {
     tail_len = lz->decoded_bytes - (tail - lz->uncompressed_buffer);
     memmove(lz->uncompressed_buffer, tail, tail_len);
@@ -170,22 +170,22 @@ int lz4stream_read_block(lz4stream *lz, void *tail)
   not_compressed = len & 0x70000000;
   len &= 0x7FFFFFFF;
 
-  if(not_compressed)
+  if (not_compressed)
   {
     compressed_data = start;
   }
 
   int bytes = read(lz->fd, compressed_data, len);
-  if(bytes != len)
+  if (bytes != len)
   {
     lz->eof = true;
     lz->error = "Error reading compressed data";
     return 0;
   }
 
-  if(lz->block_checksum_flag)
+  if (lz->block_checksum_flag)
   {
-    if(read(lz->fd, &checksum, sizeof(checksum)) != sizeof(checksum))
+    if (read(lz->fd, &checksum, sizeof(checksum)) != sizeof(checksum))
     {
       lz->eof = true;
       lz->error = "Error reading checksum";
@@ -194,14 +194,14 @@ int lz4stream_read_block(lz4stream *lz, void *tail)
 
     checksum = le32toh(checksum);
     calculated_checksum = XXH32(compressed_data, len, LZ4STREAM_XXHASH_SEED);
-    if(checksum != calculated_checksum)
+    if (checksum != calculated_checksum)
     {
       lz->error = "bad checksum";
       return 0;
     }
   }
 
-  if(compressed_data)
+  if (compressed_data)
   {
     lz->decoded_bytes = LZ4_decompress_safe(
         compressed_data,
@@ -209,7 +209,7 @@ int lz4stream_read_block(lz4stream *lz, void *tail)
         len,
         lz->block_size
       );
-    if(lz->decoded_bytes < 0)
+    if (lz->decoded_bytes < 0)
     {
       lz->eof = true;
       lz->error = "malformed block or lz4 decoder internal error";
@@ -254,14 +254,14 @@ lz4stream *lz4stream_fdopen_write(
   uint8_t header[3];
   uint32_t signature = htole32(LZ4STREAM_SIGNATURE);
 
-  if(block_size_id < 4 || block_size_id > 7)
+  if (block_size_id < 4 || block_size_id > 7)
   {
     close(fd);
     return NULL;
   }
 
   lz4stream *lz = calloc(1, sizeof(lz4stream));
-  if(!lz)
+  if (!lz)
   {
     close(fd);
     return NULL;
@@ -279,11 +279,11 @@ lz4stream *lz4stream_fdopen_write(
   lz->offset = lz->uncompressed_buffer;
 
   header[0] = LZ4S_B0_VERSION | LZ4S_B0_BLOCK_INDEP; // block independent
-  if(lz->block_checksum_flag)
+  if (lz->block_checksum_flag)
   {
     header[0] |= LZ4S_B0_BLOCK_CHECKSUM;
   }
-  if(lz->stream_checksum_flag)
+  if (lz->stream_checksum_flag)
   {
     header[0] |= LZ4S_B0_STREAM_CHECKSUM;
   }
@@ -291,13 +291,13 @@ lz4stream *lz4stream_fdopen_write(
   header[1] = (block_size_id | 0x07) << 4;
   header[2] = (XXH32(header, 2, LZ4STREAM_XXHASH_SEED) >> 8) & 0xff ;
 
-  if(write(lz->fd, &signature, sizeof(signature)) != sizeof(signature))
+  if (write(lz->fd, &signature, sizeof(signature)) != sizeof(signature))
   {
     lz->error = "error writing signature";
     return lz;
   }
 
-  if(write(lz->fd, &header, sizeof(header)) != sizeof(header))
+  if (write(lz->fd, &header, sizeof(header)) != sizeof(header))
   {
     lz->error = "error writing header";
     return lz;
@@ -315,13 +315,13 @@ lz4stream *lz4stream_open_write(
 {
   /* this check same as in lz4stream_fdopen_write(), but we should check
      block_size_id before open/create file */
-  if(block_size_id < 4 || block_size_id > 7)
+  if (block_size_id < 4 || block_size_id > 7)
   {
     return NULL;
   }
 
   int fd = open(filename, O_WRONLY | O_CREAT, 0644);
-  if(fd < 0)
+  if (fd < 0)
   {
     return NULL;
   };
@@ -347,31 +347,31 @@ int lz4stream_write_block(lz4stream *lz, void *block, int size)
       lz->block_size
     );
 
-  if(bytes < 0)
+  if (bytes < 0)
   {
     lz->error = "internal LZ4 error";
     return 0;
   }
 
   bytes_le32 = htole32(bytes);
-  if(write(lz->fd, &bytes_le32, sizeof(bytes_le32)) != sizeof(bytes_le32))
+  if (write(lz->fd, &bytes_le32, sizeof(bytes_le32)) != sizeof(bytes_le32))
   {
     lz->error = "error writing block length";
     return 0;
   }
 
-  if(write(lz->fd, lz->compressed_buffer, bytes) != bytes)
+  if (write(lz->fd, lz->compressed_buffer, bytes) != bytes)
   {
     lz->error = "error writing data block";
     return 0;
   }
 
-  if(lz->block_checksum_flag)
+  if (lz->block_checksum_flag)
   {
     checksum = htole32(
         XXH32(lz->compressed_buffer, bytes, LZ4STREAM_XXHASH_SEED)
       );
-    if(write(lz->fd, &checksum, sizeof(checksum)) != sizeof(checksum))
+    if (write(lz->fd, &checksum, sizeof(checksum)) != sizeof(checksum))
     {
       lz->error = "error writing checksum";
       return 0;
@@ -389,7 +389,7 @@ int lz4stream_flush(lz4stream *lz)
       lz->uncompressed_buffer,
       lz->offset - lz->uncompressed_buffer
     );
-  if(bytes)
+  if (bytes)
   {
     lz->offset = lz->uncompressed_buffer;
   }
@@ -398,13 +398,13 @@ int lz4stream_flush(lz4stream *lz)
 
 int lz4stream_write(lz4stream *lz, void *data, int size)
 {
-  if(size > lz->block_size)
+  if (size > lz->block_size)
   {
     lz->error = "data large then buffer";
     return 0;
   }
 
-  if((lz->offset - lz->uncompressed_buffer + size) > lz->block_size)
+  if ((lz->offset - lz->uncompressed_buffer + size) > lz->block_size)
   {
     int size1 = lz->block_size - (lz->offset - lz->uncompressed_buffer);
     memcpy(lz->offset, data, size1);
