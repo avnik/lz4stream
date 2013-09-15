@@ -1,4 +1,5 @@
 #include <sys/types.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <endian.h>
 #include <fcntl.h>
@@ -22,7 +23,7 @@
 #define LZ4S_B0_VERSION_MASK 0xC0
 #define LZ4S_B1_RESERVED_MASK 0x8f
 
-static int read_stream_headers(lz4stream *lz)
+static void *read_stream_headers(lz4stream *lz)
 {
   uint32_t signature;
   uint8_t header[3];
@@ -30,27 +31,18 @@ static int read_stream_headers(lz4stream *lz)
   uint8_t check_bits_xxh32;
   int block_size_id;
 
-  if (read(lz->fd, &signature, sizeof(signature)) != sizeof(signature))
-  {
-    lz->error = "Error reading signature";
-    return 0;
-  };
-  if (le32toh(signature) != LZ4STREAM_SIGNATURE)
+  if (le32toh(*(uint32_t *)lz->mapped_file) != LZ4STREAM_SIGNATURE)
   {
     lz->error = "Bad magic number";
     return 0;
   };
-  if (read(lz->fd, header, 3) != 3)
-  {
-    lz->error = "Error reading header";
-    return 0;
-  };
+  memcpy(header, lz->mapped_file + sizeof(uint32_t), sizeof(header));
 
 #define CHECK(condition, err) \
   if ((condition))             \
   {                           \
     lz->error = err;          \
-    return 0;                 \
+    return NULL;              \
   }
 
   block_size_id = (header[1] >> 4) & 0x07;
@@ -72,12 +64,15 @@ static int read_stream_headers(lz4stream *lz)
   check_bits_xxh32 = (XXH32(header, 2, LZ4STREAM_XXHASH_SEED) >> 8) & 0xff ;
   CHECK(check_bits_xxh32 != check_bits, "bad checksum stream header");
 #undef CHECK
-
+  return lz->mapped_file + sizeof(uint32_t) + sizeof(header);
 }
 
 lz4stream * lz4stream_fdopen_read(int fd)
 {
   lz4stream *lz = calloc(1, sizeof(lz4stream));
+  void *data_start;
+  struct stat sb;
+
   if (!lz)
   {
     close(fd);
@@ -86,9 +81,32 @@ lz4stream * lz4stream_fdopen_read(int fd)
 
   lz->fd = fd;
   lz->mode = O_RDONLY;
-  read_stream_headers(lz);
 
-  lz->compressed_buffer = malloc(lz->block_size);
+  if (fstat(fd, &sb))
+  {
+    lz->error = "fstat error";
+    lz->eof = true;
+    return lz;
+  }
+
+  lz->file_size = sb.st_size;
+  lz->mapped_file = mmap(NULL, lz->file_size, PROT_READ, MAP_PRIVATE, fd, 0);
+  if (lz->mapped_file == MAP_FAILED)
+  {
+    lz->error = "mmap error";
+    lz->eof = true;
+    return lz;
+  }
+
+  data_start = read_stream_headers(lz);
+  if (madvise(lz->mapped_file, lz->file_size, MADV_SEQUENTIAL) != 0)
+  {
+    lz->error = "madvise error";
+    lz->eof = true;
+    return lz;
+  }
+
+  lz->compressed_buffer = data_start;
   lz->uncompressed_buffer = malloc(2 * lz->block_size);
   return lz;
 }
@@ -115,9 +133,19 @@ int lz4stream_close(lz4stream *lz)
     write(lz->fd, &zero, sizeof(zero));
   }
 
+  if (lz->mapped_file)
+  {
+    munmap(lz->mapped_file, lz->file_size);
+  }
+
   if (lz->fd)
     close(lz->fd);
-  free(lz->compressed_buffer);
+
+  if (lz->mode == O_WRONLY)
+  {
+    free(lz->compressed_buffer);
+  }
+
   free(lz->uncompressed_buffer);
   free(lz);
 }
@@ -144,12 +172,8 @@ int lz4stream_read_block(lz4stream *lz, void *tail)
     return 0;
   }
 
-  if (read(lz->fd, &len, sizeof(len)) != sizeof(len))
-  {
-    lz->eof = true;
-    lz->error = "Error reading length";
-    return 0;
-  }
+  len = *(uint32_t *)lz->compressed_buffer;
+  lz->compressed_buffer += sizeof(uint32_t);
 
   if (!len)
   {
@@ -170,39 +194,21 @@ int lz4stream_read_block(lz4stream *lz, void *tail)
   not_compressed = len & 0x70000000;
   len &= 0x7FFFFFFF;
 
-  if (not_compressed)
-  {
-    compressed_data = start;
-  }
-
-  int bytes = read(lz->fd, compressed_data, len);
-  if (bytes != len)
+  if (((lz->compressed_buffer - lz->mapped_file) + len) > lz->file_size)
   {
     lz->eof = true;
-    lz->error = "Error reading compressed data";
+    lz->error = "Error reading compressed data (bound check)";
     return 0;
   }
 
-  if (lz->block_checksum_flag)
+  if (not_compressed)
   {
-    if (read(lz->fd, &checksum, sizeof(checksum)) != sizeof(checksum))
-    {
-      lz->eof = true;
-      lz->error = "Error reading checksum";
-      return 0;
-    }
-
-    checksum = le32toh(checksum);
-    calculated_checksum = XXH32(compressed_data, len, LZ4STREAM_XXHASH_SEED);
-    if (checksum != calculated_checksum)
-    {
-      lz->error = "bad checksum";
-      return 0;
-    }
+    memcpy(start, lz->compressed_buffer, len);
+    lz->decoded_bytes = len;
   }
-
-  if (compressed_data)
+  else
   {
+    compressed_data = lz->compressed_buffer;
     lz->decoded_bytes = LZ4_decompress_safe(
         compressed_data,
         start,
@@ -215,12 +221,23 @@ int lz4stream_read_block(lz4stream *lz, void *tail)
       lz->error = "malformed block or lz4 decoder internal error";
       return 0;
     }
-   }
-   else
-   {
-     lz->decoded_bytes = len;
-   }
-   lz->decoded_bytes += tail_len;
+  }
+
+  lz->decoded_bytes += tail_len;
+  lz->compressed_buffer += len;
+
+  if (lz->block_checksum_flag)
+  {
+    checksum = le32toh(*(uint32_t *)lz->compressed_buffer);
+    lz->compressed_buffer += sizeof(checksum);
+    calculated_checksum = XXH32(compressed_data, len, LZ4STREAM_XXHASH_SEED);
+    if (checksum != calculated_checksum)
+    {
+      lz->error = "bad checksum";
+      return 0;
+    }
+  }
+
    return lz->decoded_bytes;
 };
 

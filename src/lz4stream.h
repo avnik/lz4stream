@@ -16,6 +16,8 @@ typedef struct lz4stream_t
   int   block_size;
   int   eof;
   void *offset;
+  void *mapped_file;
+  size_t file_size;
 } lz4stream;
 
 lz4stream * lz4stream_open_read(const char *filename);
