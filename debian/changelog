@@ -1,3 +1,9 @@
+lz4stream (0.3) unstable; urgency=low
+
+  * Read compressed files using mmap()
+
+ -- Alexander V. Nikolaev <avn@daemon.hole.ru>  Sun, 15 Sep 2013 15:56:46 +0000
+
 lz4stream (0.2) unstable; urgency=low
 
   * Support for writing lz4 compressed files
