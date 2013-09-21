@@ -133,7 +133,7 @@ static inline unsigned int XXH_swap32 (unsigned int x) {
 // Simple Hash Functions
 //****************************
 
-unsigned int XXH32(const void* input, int len, unsigned int seed)
+unsigned int lz4stream_XXH32(const void* input, int len, unsigned int seed)
 {
 #if 0
 	// Simple version, good for code maintenance, but unfortunately slow for small inputs
@@ -214,7 +214,7 @@ struct XXH_state32_t
 };
 
 
-void* XXH32_init (unsigned int seed)
+void* lz4stream_XXH32_init (unsigned int seed)
 {
 	struct XXH_state32_t * state = (struct XXH_state32_t *) malloc ( sizeof(struct XXH_state32_t));
 	state->seed = seed;
@@ -229,7 +229,11 @@ void* XXH32_init (unsigned int seed)
 }
 
 
-XXH_errorcode XXH32_update (void* state_in, const void* input, int len)
+XXH_errorcode lz4stream_XXH32_update (
+    void* state_in,
+    const void* input,
+    int len
+)
 {
 	struct XXH_state32_t * state = (struct XXH_state32_t *) state_in;
 	const unsigned char* p = (const unsigned char*)input;
@@ -291,7 +295,7 @@ XXH_errorcode XXH32_update (void* state_in, const void* input, int len)
 }
 
 
-unsigned int XXH32_intermediateDigest (void* state_in)
+unsigned int lz4stream_XXH32_intermediateDigest (void* state_in)
 {
 	struct XXH_state32_t * state = (struct XXH_state32_t *) state_in;
 	unsigned char * p   = (unsigned char*)state->memory;
@@ -334,9 +338,9 @@ unsigned int XXH32_intermediateDigest (void* state_in)
 }
 
 
-unsigned int XXH32_digest (void* state_in)
+unsigned int lz4stream_XXH32_digest (void* state_in)
 {
-    unsigned int h32 = XXH32_intermediateDigest(state_in);
+    unsigned int h32 = lz4stream_XXH32_intermediateDigest(state_in);
 
 	free(state_in);
 

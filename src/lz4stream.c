@@ -61,7 +61,7 @@ static void *read_stream_headers(lz4stream *lz)
 
   check_bits = header[2];
   header[1] &= 0xf0;
-  check_bits_xxh32 = (XXH32(header, 2, LZ4STREAM_XXHASH_SEED) >> 8) & 0xff ;
+  check_bits_xxh32 = (lz4stream_XXH32(header, 2, LZ4STREAM_XXHASH_SEED) >> 8) & 0xff ;
   CHECK(check_bits_xxh32 != check_bits, "bad checksum stream header");
 #undef CHECK
   return lz->mapped_file + sizeof(uint32_t) + sizeof(header);
@@ -230,7 +230,11 @@ int lz4stream_read_block(lz4stream *lz, void *tail)
   {
     checksum = le32toh(*(uint32_t *)lz->compressed_buffer);
     lz->compressed_buffer += sizeof(checksum);
-    calculated_checksum = XXH32(compressed_data, len, LZ4STREAM_XXHASH_SEED);
+    calculated_checksum = lz4stream_XXH32(
+        compressed_data,
+        len,
+        LZ4STREAM_XXHASH_SEED
+      );
     if (checksum != calculated_checksum)
     {
       lz->error = "bad checksum";
@@ -306,7 +310,7 @@ lz4stream *lz4stream_fdopen_write(
   }
 
   header[1] = (block_size_id | 0x07) << 4;
-  header[2] = (XXH32(header, 2, LZ4STREAM_XXHASH_SEED) >> 8) & 0xff ;
+  header[2] = (lz4stream_XXH32(header, 2, LZ4STREAM_XXHASH_SEED) >> 8) & 0xff ;
 
   if (write(lz->fd, &signature, sizeof(signature)) != sizeof(signature))
   {
@@ -386,7 +390,7 @@ int lz4stream_write_block(lz4stream *lz, void *block, int size)
   if (lz->block_checksum_flag)
   {
     checksum = htole32(
-        XXH32(lz->compressed_buffer, bytes, LZ4STREAM_XXHASH_SEED)
+        lz4stream_XXH32(lz->compressed_buffer, bytes, LZ4STREAM_XXHASH_SEED)
       );
     if (write(lz->fd, &checksum, sizeof(checksum)) != sizeof(checksum))
     {

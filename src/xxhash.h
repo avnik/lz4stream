@@ -75,7 +75,7 @@ typedef enum { OK=0, XXH_ERROR } XXH_errorcode;
 // Simple Hash Functions
 //****************************
 
-unsigned int XXH32 (const void* input, int len, unsigned int seed);
+unsigned int lz4stream_XXH32 (const void* input, int len, unsigned int seed);
 
 /*
 XXH32() :
@@ -94,9 +94,9 @@ XXH32() :
 // Advanced Hash Functions
 //****************************
 
-void*         XXH32_init   (unsigned int seed);
-XXH_errorcode XXH32_update (void* state, const void* input, int len);
-unsigned int  XXH32_digest (void* state);
+void*         lz4stream_XXH32_init   (unsigned int seed);
+XXH_errorcode lz4stream_XXH32_update (void* state, const void* input, int len);
+unsigned int  lz4stream_XXH32_digest (void* state);
 
 /*
 These functions calculate the xxhash of an input provided in several small packets,
@@ -121,7 +121,7 @@ Memory will be freed by XXH32_digest().
 */
 
 
-unsigned int XXH32_intermediateDigest (void* state);
+unsigned int lz4stream_XXH32_intermediateDigest (void* state);
 /*
 This function does the same as XXH32_digest(), generating a 32-bit hash,
 but preserve memory context.
