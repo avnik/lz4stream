@@ -23,6 +23,25 @@
 #define LZ4S_B0_VERSION_MASK 0xC0
 #define LZ4S_B1_RESERVED_MASK 0x8f
 
+typedef struct lz4stream_t
+{
+  int     fd; // compressed file
+  void   *compressed_buffer; // buffer for compressed data
+  int     compressed_buffer_size;
+  void   *uncompressed_buffer;
+  int     decoded_bytes;
+  int     mode;
+  char   *error;
+
+  bool    block_checksum_flag;
+  bool    stream_checksum_flag;
+  int     block_size;
+  int     eof;
+  void   *offset;
+  void   *mapped_file;
+  size_t  file_size;
+} lz4stream;
+
 static void *read_stream_headers(lz4stream *lz)
 {
   uint32_t signature;

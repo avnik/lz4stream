@@ -1,24 +1,7 @@
 #ifndef _LZ4_STREAM_H
 #define _LZ4_STREAM_H 1
 
-typedef struct lz4stream_t
-{
-  int   fd; // compressed file
-  void *compressed_buffer; // buffer for compressed data
-  int   compressed_buffer_size;
-  void *uncompressed_buffer;
-  int   decoded_bytes;
-  int   mode;
-  char *error;
-
-  bool  block_checksum_flag;
-  bool  stream_checksum_flag;
-  int   block_size;
-  int   eof;
-  void *offset;
-  void *mapped_file;
-  size_t file_size;
-} lz4stream;
+typedef struct lz4stream_t lz4stream;
 
 lz4stream * lz4stream_open_read(const char *filename);
 
