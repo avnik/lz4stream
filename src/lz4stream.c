@@ -154,7 +154,9 @@ int lz4stream_close(lz4stream * lz)
   }
 
   if (lz->fd)
+  {
     close(lz->fd);
+  }
 
   if (lz->mode == O_WRONLY)
   {
