@@ -11,7 +11,8 @@ AM_INIT_AUTOMAKE([-Wall foreign])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 dnl Check for programs
-AC_PROG_CC
+AC_PROG_CC([gcc clang cc])
+AC_PROG_CC_C99
 AC_USE_SYSTEM_EXTENSIONS
 LT_PREREQ([2.2.6])
 LT_INIT([disable-static])
