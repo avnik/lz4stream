@@ -44,11 +44,7 @@ typedef struct lz4stream_t
 
 static void *read_stream_headers(lz4stream *lz)
 {
-  uint32_t signature;
-  uint8_t header[3];
-  uint8_t check_bits;
-  uint8_t check_bits_xxh32;
-  int block_size_id;
+  uint8_t header[3] = {0, 0, 0};
 
   if (le32toh(*(uint32_t *)lz->mapped_file) != LZ4STREAM_SIGNATURE)
   {
@@ -64,7 +60,7 @@ static void *read_stream_headers(lz4stream *lz)
     return NULL;              \
   }
 
-  block_size_id = (header[1] >> 4) & 0x07;
+  int block_size_id = (header[1] >> 4) & 0x07;
   lz->block_size = 1 << (8 + (2 * block_size_id));
   lz->block_checksum_flag = header[0] & LZ4S_B0_BLOCK_CHECKSUM;
   lz->stream_checksum_flag = header[0] & LZ4S_B0_STREAM_CHECKSUM;
@@ -78,9 +74,10 @@ static void *read_stream_headers(lz4stream *lz)
   CHECK((header[1] & LZ4S_B1_RESERVED_MASK) != 0, "bad reserved bits");
   CHECK(block_size_id < 4 || block_size_id > 7, "bad block size id");
 
-  check_bits = header[2];
+  uint8_t check_bits = header[2];
   header[1] &= 0xf0;
-  check_bits_xxh32 = (lz4stream_XXH32(header, 2, LZ4STREAM_XXHASH_SEED) >> 8) & 0xff ;
+  uint8_t check_bits_xxh32 =
+      (lz4stream_XXH32(header, 2, LZ4STREAM_XXHASH_SEED) >> 8) & 0xff ;
   CHECK(check_bits_xxh32 != check_bits, "bad checksum stream header");
 #undef CHECK
   return lz->mapped_file + sizeof(uint32_t) + sizeof(header);
@@ -89,7 +86,6 @@ static void *read_stream_headers(lz4stream *lz)
 lz4stream * lz4stream_fdopen_read(int fd)
 {
   lz4stream *lz = calloc(1, sizeof(lz4stream));
-  void *data_start;
   struct stat sb;
 
   if (!lz)
@@ -117,7 +113,7 @@ lz4stream * lz4stream_fdopen_read(int fd)
     return lz;
   }
 
-  data_start = read_stream_headers(lz);
+  void * data_start = read_stream_headers(lz);
   if (madvise(lz->mapped_file, lz->file_size, MADV_SEQUENTIAL) != 0)
   {
     lz->error = "madvise error";
@@ -171,11 +167,6 @@ int lz4stream_close(lz4stream *lz)
 
 int lz4stream_read_block(lz4stream *lz, void *tail)
 {
-  uint32_t len;
-  uint32_t checksum;
-  uint32_t calculated_checksum;
-
-  int not_compressed;
   int tail_len = 0;
   void *compressed_data = lz->compressed_buffer;
   void *start = lz->uncompressed_buffer;
@@ -191,7 +182,7 @@ int lz4stream_read_block(lz4stream *lz, void *tail)
     return 0;
   }
 
-  len = *(uint32_t *)lz->compressed_buffer;
+  uint32_t len = *(uint32_t *)lz->compressed_buffer;
   lz->compressed_buffer += sizeof(uint32_t);
 
   if (!len)
@@ -210,7 +201,7 @@ int lz4stream_read_block(lz4stream *lz, void *tail)
 
   /* in case if "uncompressed data" flag, write directly in output buffer */
   len = le32toh(len);
-  not_compressed = len & 0x70000000;
+  int not_compressed = len & 0x70000000;
   len &= 0x7FFFFFFF;
 
   if (((lz->compressed_buffer - lz->mapped_file) + len) > lz->file_size)
@@ -247,9 +238,9 @@ int lz4stream_read_block(lz4stream *lz, void *tail)
 
   if (lz->block_checksum_flag)
   {
-    checksum = le32toh(*(uint32_t *)lz->compressed_buffer);
+    uint32_t checksum = le32toh(*(uint32_t *)lz->compressed_buffer);
     lz->compressed_buffer += sizeof(checksum);
-    calculated_checksum = lz4stream_XXH32(
+    uint32_t calculated_checksum = lz4stream_XXH32(
         compressed_data,
         len,
         LZ4STREAM_XXHASH_SEED
@@ -291,7 +282,7 @@ lz4stream *lz4stream_fdopen_write(
     bool stream_checksum
   )
 {
-  uint8_t header[3];
+  uint8_t header[3] = {0, 0, 0};
   uint32_t signature = htole32(LZ4STREAM_SIGNATURE);
 
   if (block_size_id < 4 || block_size_id > 7)
@@ -376,11 +367,7 @@ lz4stream *lz4stream_open_write(
 
 int lz4stream_write_block(lz4stream *lz, void *block, int size)
 {
-  uint32_t bytes;
-  uint32_t bytes_le32;
-  uint32_t checksum;
-
-  bytes = LZ4_compress_limitedOutput(
+  uint32_t bytes = LZ4_compress_limitedOutput(
       block,
       lz->compressed_buffer,
       size,
@@ -393,7 +380,7 @@ int lz4stream_write_block(lz4stream *lz, void *block, int size)
     return 0;
   }
 
-  bytes_le32 = htole32(bytes);
+  uint32_t bytes_le32 = htole32(bytes);
   if (write(lz->fd, &bytes_le32, sizeof(bytes_le32)) != sizeof(bytes_le32))
   {
     lz->error = "error writing block length";
@@ -408,7 +395,7 @@ int lz4stream_write_block(lz4stream *lz, void *block, int size)
 
   if (lz->block_checksum_flag)
   {
-    checksum = htole32(
+    uint32_t checksum = htole32(
         lz4stream_XXH32(lz->compressed_buffer, bytes, LZ4STREAM_XXHASH_SEED)
       );
     if (write(lz->fd, &checksum, sizeof(checksum)) != sizeof(checksum))
@@ -423,8 +410,7 @@ int lz4stream_write_block(lz4stream *lz, void *block, int size)
 
 int lz4stream_flush(lz4stream *lz)
 {
-  int bytes;
-  bytes = lz4stream_write_block(
+  int bytes = lz4stream_write_block(
       lz,
       lz->uncompressed_buffer,
       lz->offset - lz->uncompressed_buffer
