@@ -32,4 +32,16 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
 ===============================================================================
 
+Third-party source code, bundled with lz4stream:
+
+src/xxhash.c: Fast Hash algorithm
+---------------------------------
+
+* xxHash source repository : http://code.google.com/p/xxhash/
+* Available under BSD 2-Clause License
+  (http://www.opensource.org/licenses/bsd-license.php)
+* Copyright (C) 2012-2013, Yann Collet.
+
+===============================================================================
+
 (end of COPYRIGHT)
