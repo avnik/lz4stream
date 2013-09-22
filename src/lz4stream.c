@@ -42,7 +42,7 @@ typedef struct lz4stream_t
   size_t  file_size;
 } lz4stream;
 
-static void *read_stream_headers(lz4stream *lz)
+static void * read_stream_headers(lz4stream * lz)
 {
   uint8_t header[3] = {0, 0, 0};
 
@@ -85,7 +85,7 @@ static void *read_stream_headers(lz4stream *lz)
 
 lz4stream * lz4stream_fdopen_read(int fd)
 {
-  lz4stream *lz = calloc(1, sizeof(lz4stream));
+  lz4stream * lz = calloc(1, sizeof(lz4stream));
   struct stat sb;
 
   if (!lz)
@@ -126,7 +126,7 @@ lz4stream * lz4stream_fdopen_read(int fd)
   return lz;
 }
 
-lz4stream * lz4stream_open_read(const char *filename)
+lz4stream * lz4stream_open_read(const char * filename)
 {
   int fd = open(filename, O_RDONLY);
   if (fd < 0)
@@ -136,7 +136,7 @@ lz4stream * lz4stream_open_read(const char *filename)
   return lz4stream_fdopen_read(fd);
 }
 
-int lz4stream_close(lz4stream *lz)
+int lz4stream_close(lz4stream * lz)
 {
   uint32_t zero = 0;
 
@@ -165,11 +165,11 @@ int lz4stream_close(lz4stream *lz)
   free(lz);
 }
 
-int lz4stream_read_block(lz4stream *lz, void *tail)
+int lz4stream_read_block(lz4stream * lz, void * tail)
 {
   int tail_len = 0;
-  void *compressed_data = lz->compressed_buffer;
-  void *start = lz->uncompressed_buffer;
+  void * compressed_data = lz->compressed_buffer;
+  void * start = lz->uncompressed_buffer;
 
   if (lz->error) /* Do nothing in error state */
   {
@@ -255,27 +255,27 @@ int lz4stream_read_block(lz4stream *lz, void *tail)
    return lz->decoded_bytes;
 };
 
-int lz4stream_get_decoded_bytes(lz4stream *lz)
+int lz4stream_get_decoded_bytes(lz4stream * lz)
 {
   return lz->decoded_bytes;
 }
 
-void *lz4stream_get_buffer(lz4stream *lz)
+void * lz4stream_get_buffer(lz4stream * lz)
 {
   return lz->uncompressed_buffer;
 }
 
-char *lz4stream_strerror(lz4stream *lz)
+char * lz4stream_strerror(lz4stream * lz)
 {
   return lz->error;
 }
 
-int lz4stream_eof(lz4stream *lz)
+int lz4stream_eof(lz4stream * lz)
 {
   return lz->eof;
 }
 
-lz4stream *lz4stream_fdopen_write(
+lz4stream * lz4stream_fdopen_write(
     int fd,
     int block_size_id,
     bool block_checksum,
@@ -291,7 +291,7 @@ lz4stream *lz4stream_fdopen_write(
     return NULL;
   }
 
-  lz4stream *lz = calloc(1, sizeof(lz4stream));
+  lz4stream * lz = calloc(1, sizeof(lz4stream));
   if (!lz)
   {
     close(fd);
@@ -337,8 +337,8 @@ lz4stream *lz4stream_fdopen_write(
   return lz;
 }
 
-lz4stream *lz4stream_open_write(
-    const char *filename,
+lz4stream * lz4stream_open_write(
+    const char * filename,
     int block_size_id,
     bool block_checksum,
     bool stream_checksum
@@ -365,7 +365,7 @@ lz4stream *lz4stream_open_write(
     );
 }
 
-int lz4stream_write_block(lz4stream *lz, void *block, int size)
+int lz4stream_write_block(lz4stream * lz, void * block, int size)
 {
   uint32_t bytes = LZ4_compress_limitedOutput(
       block,
@@ -408,7 +408,7 @@ int lz4stream_write_block(lz4stream *lz, void *block, int size)
   return size;
 }
 
-int lz4stream_flush(lz4stream *lz)
+int lz4stream_flush(lz4stream * lz)
 {
   int bytes = lz4stream_write_block(
       lz,
@@ -422,7 +422,7 @@ int lz4stream_flush(lz4stream *lz)
   return bytes;
 }
 
-int lz4stream_write(lz4stream *lz, void *data, int size)
+int lz4stream_write(lz4stream * lz, void * data, int size)
 {
   if (size > lz->block_size)
   {
