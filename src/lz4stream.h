@@ -1,5 +1,5 @@
-#ifndef _LZ4_STREAM_H
-#define _LZ4_STREAM_H 1
+#ifndef LZ4_STREAM_H_INCLUDED_
+#define LZ4_STREAM_H_INCLUDED_ 1
 
 typedef struct lz4stream_t lz4stream;
 
