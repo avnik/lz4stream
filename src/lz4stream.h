@@ -1,5 +1,5 @@
-#ifndef _LZ4_STREAM_H
-#define _LZ4_STREAM_H 1
+#ifndef LZ4_STREAM_H_INCLUDED_
+#define LZ4_STREAM_H_INCLUDED_
 
 typedef struct lz4stream_t lz4stream;
 
@@ -38,4 +38,4 @@ int lz4stream_write_block(lz4stream * lz, void * block, int size);
 int lz4stream_flush(lz4stream * lz);
 int lz4stream_write(lz4stream * lz, void * data, int size);
 
-#endif
+#endif /* LZ4_STREAM_H_INCLUDED_ */
