@@ -1,3 +1,10 @@
+lz4stream (0.3.1) unstable; urgency=low
+
+  * Code cleanup
+    (no user-visible changes since 0.3)
+
+ -- Alexander V. Nikolaev <avn@daemon.hole.ru>  Wed, 25 Sep 2013 07:49:06 +0000
+
 lz4stream (0.3) unstable; urgency=low
 
   * Read compressed files using mmap()
