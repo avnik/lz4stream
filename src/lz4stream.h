@@ -33,7 +33,6 @@ lz4stream * lz4stream_fdopen_write(
     bool stream_checksum
   );
 
-
 int lz4stream_write_block(lz4stream * lz, void * block, int size);
 int lz4stream_flush(lz4stream * lz);
 int lz4stream_write(lz4stream * lz, void * data, int size);
