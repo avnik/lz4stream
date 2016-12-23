@@ -30,6 +30,7 @@ lz4stream * lz4stream_open_read(const char * filename);
 lz4stream * lz4stream_fdopen_read(int fd);
 int lz4stream_close(lz4stream * lz);
 int lz4stream_read_block(lz4stream * lz, void * tail);
+int lz4stream_read(lz4stream *file, void *buffer, unsigned int len);
 char * lz4stream_strerror(lz4stream * lz);
 
 /* access decoded data */

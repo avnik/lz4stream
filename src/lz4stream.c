@@ -238,6 +238,61 @@ int lz4stream_read_block(lz4stream * lz, void * tail)
    return lz->decoded_bytes;
 };
 
+int lz4stream_read(lz4stream *lz, void *buffer, unsigned int len) {
+
+  if(lz->eof && lz->tail == NULL) {
+    return 0;
+  }
+  
+  void *tail = lz->tail;
+  
+  int total_read = 0;
+  void *start = buffer;
+  
+  if (tail != NULL) {
+    
+    int bytes_left_in_buffer = lz->decoded_bytes - (tail - lz->uncompressed_buffer);
+    
+    if (bytes_left_in_buffer >= len) {
+      memcpy(buffer, tail, len);
+      lz->tail += len;
+      return len;
+    } else if (bytes_left_in_buffer >= 0) {
+      memcpy(buffer, tail, bytes_left_in_buffer);
+      tail = NULL;
+      total_read += bytes_left_in_buffer;
+      start += bytes_left_in_buffer;
+    }
+
+  }
+
+  int bytes_read;
+  
+  while ((bytes_read = lz4stream_read_block(lz, tail)) > 0) {
+    
+    tail = NULL;
+    void *uncompressed_buffer = lz4stream_get_buffer(lz);
+    
+    if (total_read + bytes_read >= len) {
+      int num_to_use = (bytes_read - (total_read + bytes_read - len));
+      memcpy(start, uncompressed_buffer, num_to_use);
+      total_read = len;
+      tail = uncompressed_buffer + num_to_use;
+      break;
+    } else {
+      memcpy(start, uncompressed_buffer, bytes_read);
+      total_read += bytes_read;
+      start += bytes_read;
+    }
+    
+  }
+  
+  lz->tail = tail;
+  
+  return total_read;
+  
+}
+
 int lz4stream_get_decoded_bytes(lz4stream * lz)
 {
   return lz->decoded_bytes;
