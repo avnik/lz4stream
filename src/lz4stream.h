@@ -1,7 +1,27 @@
 #ifndef LZ4_STREAM_H_INCLUDED_
 #define LZ4_STREAM_H_INCLUDED_
 
-typedef struct lz4stream_t lz4stream;
+#include <stdbool.h>
+
+typedef struct lz4stream_t
+{
+  int     fd; // compressed file
+  void   *compressed_buffer; // buffer for compressed data
+  int     compressed_buffer_size;
+  void   *uncompressed_buffer;
+  int     decoded_bytes;
+  int     mode;
+  char   *error;
+
+  bool    block_checksum_flag;
+  bool    stream_checksum_flag;
+  int     block_size;
+  int     eof;
+  void   *offset;
+  void   *mapped_file;
+  size_t  file_size;
+  void *tail;
+} lz4stream;
 
 lz4stream * lz4stream_open_read(const char * filename);
 
@@ -10,6 +30,7 @@ lz4stream * lz4stream_open_read(const char * filename);
 lz4stream * lz4stream_fdopen_read(int fd);
 int lz4stream_close(lz4stream * lz);
 int lz4stream_read_block(lz4stream * lz, void * tail);
+int lz4stream_read(lz4stream *file, void *buffer, unsigned int len);
 char * lz4stream_strerror(lz4stream * lz);
 
 /* access decoded data */
